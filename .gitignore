@@ -1,0 +1,4 @@
+.idea
+.ruff_cache
+__pycache__
+lizardbot-*

@@ -1,0 +1,22 @@
+line-length = 100
+
+lint.select = ["ALL"]
+
+lint.ignore = [
+    "ANN401",  # any-type
+    "D205", # blank-line-after-summary
+    "N818", # error-suffix-on-exception-name
+    "RUF001", # ambiguous-unicode-character-string
+    "RUF002", # ambiguous-unicode-character-docstring
+    "RUF003", # ambiguous-unicode-character-comment
+]
+
+exclude = [".git/"]
+
+target-version = "py310"
+
+[lint.flake8-quotes]
+inline-quotes = 'single'
+
+[lint.pylint]
+max-args = 7
