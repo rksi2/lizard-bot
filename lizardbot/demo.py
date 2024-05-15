@@ -1,5 +1,5 @@
 from hammett.core import Application, Button
-from hammett.core.constants import  DEFAULT_STATE, SourcesTypes
+from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.screen import Screen
 from hammett.core.mixins import StartMixin
 from hammett.core.handlers import register_typing_handler
@@ -13,14 +13,19 @@ class HelloScreen(StartMixin, Screen):
             Button(
                 '15.04',
                 GetGroup,
-                source_type=SourcesTypes.GOTO_SOURCE_TYPE,
+                source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+            ),
+            Button(
+                '16.04',
+                GetGroup,
+                source_type=SourcesTypes.JUMP_SOURCE_TYPE,
             )
-
         ]]
 
 
 class GetGroup(StartMixin, Screen):
     description = "Пришлите номер группы!"
+
     @register_typing_handler
     async def get_number(self, update, _context):
         nmbr = update.message.text
