@@ -49,7 +49,7 @@ def main():
         print(f"{index + 1}. {file['name']}")
 
     # Запрашиваем у пользователя ввод полного названия файла (без .xlsx)
-    chosen_file_name = input("Выберите дату: ")
+    chosen_file_name = input("Введите дату: ")
 
     chosen_file = None
     for file in files:
