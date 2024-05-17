@@ -1,7 +1,6 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import openpyxl
-import requests
 from io import BytesIO
 
 
@@ -44,21 +43,25 @@ def process_excel(file_content, group_name):
 
 def main():
     files = get_filenames()
-    group_name = "ИС-12"
 
     # Выводим список доступных файлов
-    print("Доступные файлы:")
     for index, file in enumerate(files):
         print(f"{index + 1}. {file['name']}")
 
-    # Запрашиваем у пользователя выбор файла
-    file_index = int(input("Выберите дату: ")) - 1
+    # Запрашиваем у пользователя ввод полного названия файла (без .xlsx)
+    chosen_file_name = input("Выберите дату: ")
 
-    if file_index < 0 or file_index >= len(files):
-        print("Неверный выбор файла.")
+    chosen_file = None
+    for file in files:
+        if file['name'] == chosen_file_name + '.xlsx':
+            chosen_file = file
+            break
+
+    if chosen_file is None:
+        print("Файл не найден.")
         return
 
-    chosen_file = files[file_index]
+    group_name = input("Введите название группы: ")
 
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
@@ -70,7 +73,7 @@ def main():
     results = process_excel(file_content, group_name)
 
     # Выводим результаты
-    print(f"{chosen_file['name']}")
+    print(f'{chosen_file["name"]}'.replace('.xlsx',''))
     for sheet_title, room_number, teacher_name in results:
         print(f"{sheet_title}, {group_name}, Кабинет: {room_number}, Преподаватель: {teacher_name}")
 
