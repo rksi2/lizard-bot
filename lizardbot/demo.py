@@ -1,34 +1,32 @@
-import os
-
 from hammett.core import Application, Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes, RenderConfig
 from hammett.core.screen import Screen
 from hammett.core.mixins import StartMixin
 from hammett.core.handlers import register_typing_handler
 from hammett.core.handlers import register_button_handler
-from disk import get_filenames
+from disk import get_filenames, service
 
 
 class HelloScreen(StartMixin, Screen):
     description = "Привет, это бот который собирает расписание, выбери дату."
-    files = get_filenames()
 
     @register_button_handler
-    async  def btn_handler(self, update, context):
-        payload = await self.get_payload()
+    async def get_date(self, update, context):
+        payload = await self.get_payload(update,context)
+        group = GetGroup(payload=payload)
+        await group.jump(update, context)
 
-    async def add_default_keyboard(self,update,_context):
+    async def add_default_keyboard(self, update, _context):
         files = get_filenames()
         file_keyboard = []
         for file in files:
             button = Button(
-                f'{file["name"]}'.replace('.xlsx',''),
-                self.btn_handler,
-                source_type=SourcesTypes.JUMP_SOURCE_TYPE,
-                payload= file["name"]
+                f'{file["name"]}'.replace('.xlsx', ''),
+                self.get_date,
+                source_type=SourcesTypes.HANDLER_SOURCE_TYPE,
+                payload=file["name"].replace('.xlsx', ''),
             )
             file_keyboard.append([button])
-            print(file_keyboard[0])
 
         return file_keyboard
 
@@ -36,21 +34,24 @@ class HelloScreen(StartMixin, Screen):
 class GetGroup(StartMixin, Screen):
     description = "Пришлите номер группы!"
 
-    async def jump(
-        self: 'Self',
-        update: 'Update',
-        context: 'CallbackContext[BT, UD, CD, BD]',
-        **kwargs: 'Any',
-    ) -> 'State':
-        payload = await self.get_payload(update, context)
-        ...
-
-        return await super().jump(update, s)
+    def __init__(self, payload=None, **kwargs):
+        self.date = payload
+        super().__init__()
 
     @register_typing_handler
-    async def get_number(self, update, _context):
-        nmbr = update.message.text
+    async def get_schedule(self, update, context):
+        msg = update.message.text
+        schedule = service(self.date, msg)
+        schedule2 = ''.join(schedule)
+        rasp = GetSchedule()
+        rasp.description = schedule2
+        await rasp.jump(update, context)
 
+
+class GetSchedule(StartMixin, Screen):
+
+    async def shedule_text(self):
+        txt = "привет)"
 
 
 def main():

@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -41,7 +41,7 @@ def process_excel(file_content, group_name):
     return results
 
 
-def main():
+def service(name, group):
     files = get_filenames()
 
     # Выводим список доступных файлов
@@ -49,7 +49,7 @@ def main():
         print(f"{index + 1}. {file['name']}")
 
     # Запрашиваем у пользователя ввод полного названия файла (без .xlsx)
-    chosen_file_name = input("Введите дату: ")
+    chosen_file_name = name
 
     chosen_file = None
     for file in files:
@@ -61,22 +61,24 @@ def main():
         print("Файл не найден.")
         return
 
-    group_name = input("Введите название группы: ")
+    group_name = group
 
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
     file_content = download_file(chosen_file['id'], drive_service)
     results = process_excel(file_content, group_name)
-
+    message = []
     # Выводим результаты
     print(f'{chosen_file["name"]}'.replace('.xlsx',''))
     for sheet_title, room_number, teacher_name in results:
-        print(f"{sheet_title}, {group_name}, Кабинет: {room_number}, Преподаватель: {teacher_name}")
+        message.append(f"{sheet_title}, {group_name}, Кабинет: {room_number}, Преподаватель: {teacher_name}")
+
+    return message
 
 
 if __name__ == "__main__":
-    main()
+    service()
