@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
+    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -46,13 +46,15 @@ def form_schedule(schedule):
                     6: '16:40-18:10', 7: '18:20-19:50'}
 
     schedule_text = schedule.split('\n')
+
     for i, line in enumerate(schedule_text):
+        schedule_text_str = ''
         if line.strip() and line[0].isdigit():
             pair_number = int(line[0])
             print(pair_number)
             if pair_number in time_mapping:
-                schedule_text[i] += f" {time_mapping[pair_number]}"
-
+                schedule_text_str = "🕒 " + schedule_text[i] + f" {time_mapping[pair_number]}"
+                schedule_text[i] = schedule_text_str
     updated_schedule = '\n'.join(schedule_text)
     return updated_schedule
 
@@ -78,10 +80,9 @@ def service(name, group):
         return
 
     group_name = group
-
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
+    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -91,7 +92,7 @@ def service(name, group):
     # Выводим результаты
     print(f'{chosen_file["name"]}'.replace('.xlsx',''))
     for sheet_title, room_number, teacher_name in results:
-        message.append(f"\n{sheet_title}, Кабинет: {room_number}, Преподаватель: {teacher_name}")
+        message.append(f"\n{sheet_title},🔑 Кабинет: {int(room_number)},💼 Преподаватель: {teacher_name}\n")
 
     return message
 
