@@ -12,7 +12,7 @@ class HelloScreen(StartMixin, Screen):
 
     @register_button_handler
     async def get_date(self, update, context):
-        payload = await self.get_payload(update,context)
+        payload = await self.get_payload(update, context)
         group = GetGroup(payload=payload)
         await group.jump(update, context)
 
@@ -42,19 +42,19 @@ class GetGroup(StartMixin, Screen):
     async def get_schedule(self, update, context):
         msg = update.message.text
         schedule = service(self.date, msg)
-        schedule2 = f'{msg}\n' + ''.join(schedule).replace(',', '\n')
-        schedule3 = form_schedule(schedule2)
-        rasp = GetSchedule()
-        rasp.description = schedule3
-        await rasp.jump(update, context)
-
-
-
-
+        if isinstance(schedule, str):
+            rasp = GetSchedule()
+            rasp.description = schedule
+            await rasp.jump(update, context)
+        else:
+            schedule2 = f'{msg}\n' + ''.join(schedule).replace(',', '\n')
+            schedule3 = form_schedule(schedule2)
+            rasp = GetSchedule()
+            rasp.description = schedule3
+            await rasp.jump(update, context)
 
 
 class GetSchedule(StartMixin, Screen):
-
     async def shedule_text(self):
         txt = "привет)"
 
