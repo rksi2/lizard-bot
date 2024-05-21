@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -55,7 +55,7 @@ def form_schedule(schedule):
         if line.strip() and line[0].isdigit():
             pair_number = int(line[0])
             if class_hour_day and pair_number in time_mapping:
-                    schedule_text_str = "🕒 " + schedule_text[i] + f" {extended_time_mapping[pair_number]}"
+                schedule_text_str = "🕒 " + schedule_text[i] + f" {extended_time_mapping[pair_number]}"
             elif pair_number in time_mapping:
                 schedule_text_str = "🕒 " + schedule_text[i] + f" {time_mapping[pair_number]}"
             schedule_text[i] = schedule_text_str
@@ -83,10 +83,10 @@ def service(name, group):
         print("Файл не найден.")
         return "Файл не найден."
 
-    group_name = group
+    group_name = group.upper()
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 

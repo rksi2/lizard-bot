@@ -7,14 +7,12 @@ from hammett.core.handlers import register_button_handler
 from disk import get_filenames, service, form_schedule
 
 
-class HelloScreen(StartMixin, Screen):
-    description = "Привет, это бот который собирает расписание, выбери дату."
+class BaseScreen(Screen):
+    hide_keyboard = True
 
-    @register_button_handler
-    async def get_date(self, update, context):
-        payload = await self.get_payload(update, context)
-        group = GetGroup(payload=payload)
-        await group.jump(update, context)
+
+class StartScreen(StartMixin, BaseScreen):
+    description = 'Привет, это бот который собирает расписание, выбери дату.'
 
     async def add_default_keyboard(self, update, _context):
         files = get_filenames()
@@ -22,8 +20,8 @@ class HelloScreen(StartMixin, Screen):
         for file in files:
             button = Button(
                 f'{file["name"]}'.replace('.xlsx', ''),
-                self.get_date,
-                source_type=SourcesTypes.HANDLER_SOURCE_TYPE,
+                GetGroup,
+                source_type=SourcesTypes.JUMP_SOURCE_TYPE,
                 payload=file["name"].replace('.xlsx', ''),
             )
             file_keyboard.append([button])
@@ -31,41 +29,48 @@ class HelloScreen(StartMixin, Screen):
         return file_keyboard
 
 
-class GetGroup(StartMixin, Screen):
+class GetGroup(BaseScreen):
     description = "Пришлите номер группы!"
 
-    def __init__(self, payload=None, **kwargs):
-        self.date = payload
-        super().__init__()
+    async def jump(
+        self: 'Self',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
+        **kwargs: 'Any',
+    ) -> 'State':
+
+        payload = await self.get_payload(update, context)
+        context.user_data['payload'] = payload
+        return await super().jump(update, context, **kwargs)
 
     @register_typing_handler
     async def get_schedule(self, update, context):
+        payload = context.user_data.get('payload')
         msg = update.message.text
-        schedule = service(self.date, msg)
+        schedule = service(payload, msg)
         if isinstance(schedule, str):
             rasp = GetSchedule()
             rasp.description = schedule
             await rasp.jump(update, context)
         else:
-            schedule2 = f'{msg}\n' + ''.join(schedule).replace(',', '\n')
+            schedule2 = f'{msg.upper()}\n' + ''.join(schedule).replace(',', '\n')
             schedule3 = form_schedule(schedule2)
             rasp = GetSchedule()
             rasp.description = schedule3
             await rasp.jump(update, context)
 
 
-class GetSchedule(StartMixin, Screen):
-    async def shedule_text(self):
-        txt = "привет)"
+class GetSchedule(BaseScreen):
+    pass
 
 
 def main():
     name = 'Start_Screen'
     app = Application(
         name,
-        entry_point=HelloScreen,
+        entry_point=StartScreen,
         states={
-            DEFAULT_STATE: [HelloScreen, GetGroup],
+            DEFAULT_STATE: [StartScreen, GetGroup, GetSchedule],
         },
     )
     app.run()
