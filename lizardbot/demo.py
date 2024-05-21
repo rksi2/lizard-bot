@@ -7,6 +7,8 @@ from lizardbot import WAITING_FOR_GROUP_NAME
 import requests
 
 
+
+
 class BaseScreen(Screen):
     """Базовый экран с скрытой клавиатурой."""
     hide_keyboard = True
