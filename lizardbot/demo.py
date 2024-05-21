@@ -4,7 +4,7 @@ from hammett.core.screen import Screen
 from hammett.core.mixins import StartMixin
 from hammett.core.handlers import register_typing_handler
 from hammett.core.handlers import register_button_handler
-from disk import get_filenames, service, form_schedule
+from disk import get_filenames, service, search_schedule_by_teacher, form_schedule
 
 
 class HelloScreen(StartMixin, Screen):
@@ -41,7 +41,7 @@ class GetGroup(StartMixin, Screen):
     @register_typing_handler
     async def get_schedule(self, update, context):
         msg = update.message.text
-        schedule = service(self.date, msg)
+        schedule = search_schedule_by_teacher(self.date, msg)
         if isinstance(schedule, str):
             rasp = GetSchedule()
             rasp.description = schedule
