@@ -21,8 +21,9 @@ class StartScreen(StartMixin, BaseScreen):
             button = Button(
                 f'{file["name"]}'.replace('.xlsx', ''),
                 GetGroup,
-                source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+                source_type=SourcesTypes.GOTO_SOURCE_TYPE,
                 payload=file["name"].replace('.xlsx', ''),
+
             )
             file_keyboard.append([button])
 
@@ -32,15 +33,15 @@ class StartScreen(StartMixin, BaseScreen):
 class GetGroup(BaseScreen):
     description = "Пришлите номер группы!"
 
-    async def jump(
+    async def goto(
         self: 'Self',
         update: 'Update',
         context: 'CallbackContext[BT, UD, CD, BD]',
         **kwargs: 'Any',
     ) -> 'State':
-
         payload = await self.get_payload(update, context)
         context.user_data['payload'] = payload
+        print(payload)
         return await super().jump(update, context, **kwargs)
 
     @register_typing_handler
@@ -61,7 +62,16 @@ class GetGroup(BaseScreen):
 
 
 class GetSchedule(BaseScreen):
-    pass
+    async def add_default_keyboard(self, update, context):
+        return [
+            [
+                Button(
+                    "Вернуться к выбору даты",
+                    source=StartScreen,
+                    source_type=SourcesTypes.GOTO_SOURCE_TYPE
+                )
+            ]
+        ]
 
 
 def main():

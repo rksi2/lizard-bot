@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
+    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -89,7 +89,7 @@ def service(name, group):
     group_name = group.upper()
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
+    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
