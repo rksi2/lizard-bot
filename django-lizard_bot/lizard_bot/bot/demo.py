@@ -17,7 +17,6 @@ class StartScreen(StartMixin, BaseScreen):
     async def add_default_keyboard(self, update, _context):
         response = requests.get('http://127.0.0.1:8000/api/files')
         files = response.json()
-        print(files)
         file_keyboard = []
         for file in files:
             button = Button(
@@ -43,23 +42,30 @@ class GetGroup(BaseScreen):
     ) -> 'State':
         payload = await self.get_payload(update, context)
         context.user_data['payload'] = payload
-        print(payload)
+
         return await super().jump(update, context, **kwargs)
 
     @register_typing_handler
     async def get_schedule(self, update, context):
         payload = context.user_data.get('payload')
         msg = update.message.text
-        schedule = service(payload, msg)
+        data = {
+            'date':payload,
+            'group':msg
+        }
+        response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
+        if response.status_code != 200:
+            print(f"Ошибка: статус код {response.status_code}")
+
+        schedule = response.json()
         if isinstance(schedule, str):
             rasp = GetSchedule()
             rasp.description = schedule
+
             await rasp.jump(update, context)
         else:
-            schedule2 = f'{msg.upper()}\n' + ''.join(schedule).replace(',', '\n')
-            schedule3 = form_schedule(schedule2)
             rasp = GetSchedule()
-            rasp.description = schedule3
+            rasp.description = schedule
             await rasp.jump(update, context)
 
 
