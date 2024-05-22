@@ -4,12 +4,10 @@ from hammett.core.screen import Screen
 from hammett.core.mixins import StartMixin
 from hammett.core.handlers import register_typing_handler
 from hammett.core.handlers import register_button_handler
-from disk import get_filenames, service, form_schedule
-
+from disk import get_filenames, service, form_schedule, search_schedule_by_teacher
 
 class BaseScreen(Screen):
     hide_keyboard = True
-
 
 class StartScreen(StartMixin, BaseScreen):
     description = 'Привет, это бот который собирает расписание, выбери дату.'
@@ -23,15 +21,13 @@ class StartScreen(StartMixin, BaseScreen):
                 GetGroup,
                 source_type=SourcesTypes.GOTO_SOURCE_TYPE,
                 payload=file["name"].replace('.xlsx', ''),
-
             )
             file_keyboard.append([button])
 
         return file_keyboard
 
-
 class GetGroup(BaseScreen):
-    description = "Пришлите номер группы!"
+    description = "Пришлите номер группы или фамилию преподавателя!"
 
     async def goto(
         self: 'Self',
@@ -48,18 +44,34 @@ class GetGroup(BaseScreen):
     async def get_schedule(self, update, context):
         payload = context.user_data.get('payload')
         msg = update.message.text
-        schedule = service(payload, msg)
-        if isinstance(schedule, str):
-            rasp = GetSchedule()
-            rasp.description = schedule
-            await rasp.jump(update, context)
-        else:
-            schedule2 = f'{msg.upper()}\n' + ''.join(schedule).replace(',', '\n')
-            schedule3 = form_schedule(schedule2)
-            rasp = GetSchedule()
-            rasp.description = schedule3
-            await rasp.jump(update, context)
 
+        # Определяем, что ввёл пользователь: номер группы или фамилию преподавателя
+        if any(char.isdigit() for char in msg):
+            # Если в сообщении есть цифры, то это номер группы
+            schedule = service(payload, msg)
+            if isinstance(schedule, str):
+                rasp = GetSchedule()
+                rasp.description = schedule
+                await rasp.jump(update, context)
+            else:
+                schedule2 = f'{msg.upper()}\n' + ''.join(schedule).replace(',', '\n')
+                schedule3 = form_schedule(schedule2)
+                rasp = GetSchedule()
+                rasp.description = schedule3
+                await rasp.jump(update, context)
+        else:
+            # Если в сообщении нет цифр, то это фамилия преподавателя
+            schedule = search_schedule_by_teacher(payload, msg.strip())
+            if isinstance(schedule, str):
+                rasp = GetSchedule()
+                rasp.description = schedule
+                await rasp.jump(update, context)
+            else:
+                schedule2 = f'{msg.capitalize()}\n' + ''.join(schedule).replace(',', '\n')
+                schedule3 = form_schedule(schedule2)
+                rasp = GetSchedule()
+                rasp.description = schedule3
+                await rasp.jump(update, context)
 
 class GetSchedule(BaseScreen):
     async def add_default_keyboard(self, update, context):
@@ -73,7 +85,6 @@ class GetSchedule(BaseScreen):
             ]
         ]
 
-
 def main():
     name = 'Start_Screen'
     app = Application(
@@ -84,7 +95,6 @@ def main():
         },
     )
     app.run()
-
 
 if __name__ == "__main__":
     main()

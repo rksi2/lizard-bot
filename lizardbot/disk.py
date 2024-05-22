@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
+    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -39,7 +39,23 @@ def process_excel(file_content, group_name):
                     # Добавляем флаг для классного часа
                     class_hour = 'Классный час' in row
                     results.append((sheet.title, room_number, teacher_name, class_hour))
+    return results
 
+
+def process_excel2(file_content, teacher_name):
+    wb = openpyxl.load_workbook(file_content)
+    results = []
+    teacher_last_name = teacher_name.strip().lower()
+
+    for sheet in wb.worksheets:
+        for row in sheet.iter_rows(min_row=2, values_only=True):
+            for i in range(2, len(row), 3):  # Start index at 2 to get the teacher's name
+                if row[i] and row[i].strip().lower().startswith(teacher_last_name):
+                    room_number = row[i - 2]
+                    group_name = row[i - 1]
+                    full_teacher_name = row[i]  # Get the full teacher's name from the cell
+                    class_hour = 'Классный час' in row
+                    results.append((sheet.title, room_number, group_name, full_teacher_name, class_hour))
     return results
 
 
@@ -89,7 +105,7 @@ def service(name, group):
     group_name = group.upper()
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/loosy/projects/lizard_bot/lizardbot/lizardbot-423509-3176c27352b0.json'
+    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -108,5 +124,41 @@ def service(name, group):
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Преподаватель: {teacher_name}\n")
         else:
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Преподаватель: {teacher_name}\n")
+
+    return message
+
+
+def search_schedule_by_teacher(name, teacher_name):
+    files = get_filenames()
+
+    chosen_file_name = name
+    chosen_file = None
+    for file in files:
+        if file['name'] == chosen_file_name + '.xlsx':
+            chosen_file = file
+            break
+
+    if chosen_file is None:
+        return "Файл не найден."
+
+    scopes = ['https://www.googleapis.com/auth/drive']
+    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
+    drive_service = build('drive', 'v3', credentials=credentials)
+
+    file_content = download_file(chosen_file['id'], drive_service)
+    results = process_excel2(file_content, teacher_name)
+
+    if not results:
+        return "Неправильно введены данные или занятий нет."
+
+    message = []
+    for sheet_title, room_number, group_name, full_teacher_name, class_hour in results:
+        if isinstance(room_number, float):
+            room_number = int(room_number)
+        if class_hour:
+            message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Группа: {group_name}\n")
+        else:
+            message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Группа: {group_name}\n")
 
     return message
