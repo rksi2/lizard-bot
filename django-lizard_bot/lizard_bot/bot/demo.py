@@ -53,21 +53,24 @@ class GetGroup(BaseScreen):
             'date':payload,
             'group':msg
         }
-        response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
-        if response.status_code != 200:
-            print(f"Ошибка: статус код {response.status_code}")
 
-        schedule = response.json()
-        if isinstance(schedule, str):
+        if any(char.isdigit() for char in msg):
+            response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
+            if response.status_code != 200:
+                print(f"Ошибка: статус код {response.status_code}")
+            schedule = response.json()
             rasp = GetSchedule()
             rasp.description = schedule
-
             await rasp.jump(update, context)
+
         else:
+            response = requests.post('http://127.0.0.1:8000/api/teachers/', json=data)
+            if response.status_code != 200:
+                print(f"Ошибка: статус код {response.status_code}")
+            schedule = response.json()
             rasp = GetSchedule()
             rasp.description = schedule
             await rasp.jump(update, context)
-
 
 class GetSchedule(BaseScreen):
     async def add_default_keyboard(self, update, context):
