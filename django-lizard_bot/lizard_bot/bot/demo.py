@@ -1,10 +1,10 @@
 from hammett.core import Application, Button
-from hammett.core.constants import DEFAULT_STATE, SourcesTypes, RenderConfig
+from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.screen import Screen
 from hammett.core.mixins import StartMixin
 from hammett.core.handlers import register_typing_handler
-from hammett.core.handlers import register_button_handler
 from disk import get_filenames, service, form_schedule
+import requests
 
 
 class BaseScreen(Screen):
@@ -15,7 +15,9 @@ class StartScreen(StartMixin, BaseScreen):
     description = 'Привет, это бот который собирает расписание, выбери дату.'
 
     async def add_default_keyboard(self, update, _context):
-        files = get_filenames()
+        response = requests.get('http://127.0.0.1:8000/api/files')
+        files = response.json()
+        print(files)
         file_keyboard = []
         for file in files:
             button = Button(
