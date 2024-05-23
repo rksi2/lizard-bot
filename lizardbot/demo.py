@@ -12,19 +12,18 @@ class BaseScreen(Screen):
 
 
 class StartScreen(StartMixin, BaseScreen):
-    description = 'Привет, это бот который собирает расписание, выбери дату.'
+    description = "Привет, это бот который собирает расписание, выбери дату."
 
     async def add_default_keyboard(self, update, _context):
-        response = requests.get('http://127.0.0.1:8000/api/files')
+        response = requests.get("http://127.0.0.1:8000/api/files")
         files = response.json()
         file_keyboard = []
         for file in files:
             button = Button(
-                f'{file["name"]}'.replace('.xlsx', ''),
+                f'{file["name"]}'.replace(".xlsx", ""),
                 GetGroup,
                 source_type=SourcesTypes.SGOTO_SOURCE_TYPE,
-                payload=file["name"].replace('.xlsx', ''),
-
+                payload=file["name"].replace(".xlsx", ""),
             )
             file_keyboard.append([button])
 
@@ -33,45 +32,40 @@ class StartScreen(StartMixin, BaseScreen):
 
 class GetGroup(BaseScreen, RouteMixin):
     description = "Пришлите номер группы!"
-    routes = (
-        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),
-    )
+    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
+
     async def sgoto(
-        self: 'Self',
-        update: 'Update',
-        context: 'CallbackContext[BT, UD, CD, BD]',
-        **kwargs: 'Any',
-    ) -> 'State':
+        self: "Self",
+        update: "Update",
+        context: "CallbackContext[BT, UD, CD, BD]",
+        **kwargs: "Any",
+    ) -> "State":
         payload = await self.get_payload(update, context)
-        context.user_data['payload'] = payload
+        context.user_data["payload"] = payload
 
         return await super().sgoto(update, context, **kwargs)
 
     @register_typing_handler
     async def get_schedule(self, update, context):
-        payload = context.user_data.get('payload')
+        payload = context.user_data.get("payload")
         msg = update.message.text
-        data = {
-            'date':payload,
-            'group':msg
-        }
+        data = {"date": payload, "group": msg}
 
         if any(char.isdigit() for char in msg):
-            response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
+            response = requests.post("http://127.0.0.1:8000/api/service/", json=data)
             if response.status_code != 200:
                 print(f"Ошибка: статус код {response.status_code}")
             schedule = response.json()
             rasp = GetSchedule()
             rasp.description = schedule
             return await rasp.jump(update, context)
-        response = requests.post('http://127.0.0.1:8000/api/teachers/', json=data)
+        response = requests.post("http://127.0.0.1:8000/api/teachers/", json=data)
         if response.status_code != 200:
             print(f"Ошибка: статус код {response.status_code}")
         schedule = response.json()
         rasp = GetSchedule()
         rasp.description = schedule
         return await rasp.jump(update, context)
-
 
 
 class GetSchedule(BaseScreen):
@@ -81,19 +75,19 @@ class GetSchedule(BaseScreen):
                 Button(
                     "Вернуться к выбору даты",
                     source=StartScreen,
-                    source_type=SourcesTypes.GOTO_SOURCE_TYPE
+                    source_type=SourcesTypes.GOTO_SOURCE_TYPE,
                 )
             ]
         ]
 
 
 def main():
-    name = 'Start_Screen'
+    name = "Start_Screen"
     app = Application(
         name,
         entry_point=StartScreen,
         states={
-            DEFAULT_STATE: {StartScreen,GetSchedule},
+            DEFAULT_STATE: {StartScreen, GetSchedule},
             WAITING_FOR_GROUP_NAME: {GetGroup},
         },
     )
