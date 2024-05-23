@@ -6,7 +6,7 @@ from io import BytesIO
 
 def get_filenames():
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
 
     drive_service = build('drive', 'v3', credentials=credentials)
@@ -105,7 +105,7 @@ def service(name, group):
     group_name = group.upper()
     # Загружаем и обрабатываем выбранный файл
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -124,8 +124,9 @@ def service(name, group):
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Преподаватель: {teacher_name}\n")
         else:
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Преподаватель: {teacher_name}\n")
-
-    return message
+    message2 = f'{group_name.upper()}\n' + ''.join(message).replace(',', '\n')
+    message3 = form_schedule(message2)
+    return message3
 
 
 def search_schedule_by_teacher(name, teacher_name):
@@ -142,7 +143,7 @@ def search_schedule_by_teacher(name, teacher_name):
         return "Файл не найден."
 
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/dredd/projects/lizard_bot/lizardbot-423609-db4df596a5a4.json'
+    SERVICE_ACCOUNT_FILE = '/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
@@ -160,5 +161,7 @@ def search_schedule_by_teacher(name, teacher_name):
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Группа: {group_name}\n")
         else:
             message.append(f"\n{sheet_title},🔑 Кабинет: {room_number},💼 Группа: {group_name}\n")
+    message2 = f'{teacher_name.capitalize()}\n' + ''.join(message).replace(',', '\n')
+    message3 = form_schedule(message2)
+    return message3
 
-    return message

@@ -143,7 +143,7 @@ def search_schedule_by_teacher(name, teacher_name):
         return "Файл не найден."
 
     scopes = ['https://www.googleapis.com/auth/drive']
-    SERVICE_ACCOUNT_FILE = '/home/cusdeb/Projects/lizard_bot/lizardbot/lizardbot-423509-18b41a862983.json'
+    SERVICE_ACCOUNT_FILE = '/lizardbot/lizardbot-423509-18b41a862983.json'
     credentials = service_account.Credentials.from_service_account_file(SERVICE_ACCOUNT_FILE, scopes=scopes)
     drive_service = build('drive', 'v3', credentials=credentials)
 
