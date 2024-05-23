@@ -1,4 +1,5 @@
 import os
 
-TOKEN = os.getenv('TOKEN', '6420166122:AAHyWcxKtuo8FuU5H1BvLO5lXlHA_WTBN38')
+TOKEN = os.getenv('TOKEN', '7079723416:AAEscyl3lGuG0Sq-2ebbH96G0WJxlrE06mE')
+SAVE_LATEST_MESSAGE = True
 

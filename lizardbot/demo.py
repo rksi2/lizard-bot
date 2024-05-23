@@ -1,71 +1,100 @@
 from hammett.core import Application, Button
-from hammett.core.constants import DEFAULT_STATE, SourcesTypes, RenderConfig
+from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.screen import Screen
-from hammett.core.mixins import StartMixin
+from hammett.core.mixins import StartMixin, RouteMixin
 from hammett.core.handlers import register_typing_handler
-from hammett.core.handlers import register_button_handler
-from disk import get_filenames, service, search_schedule_by_teacher, form_schedule
+from lizardbot import WAITING_FOR_GROUP_NAME
+import requests
 
 
-class HelloScreen(StartMixin, Screen):
-    description = "Привет, это бот который собирает расписание, выбери дату."
+class BaseScreen(Screen):
+    hide_keyboard = True
 
-    @register_button_handler
-    async def get_date(self, update, context):
-        payload = await self.get_payload(update, context)
-        group = GetGroup(payload=payload)
-        await group.jump(update, context)
+
+class StartScreen(StartMixin, BaseScreen):
+    description = 'Привет, это бот который собирает расписание, выбери дату.'
 
     async def add_default_keyboard(self, update, _context):
-        files = get_filenames()
+        response = requests.get('http://127.0.0.1:8000/api/files')
+        files = response.json()
         file_keyboard = []
         for file in files:
             button = Button(
                 f'{file["name"]}'.replace('.xlsx', ''),
-                self.get_date,
-                source_type=SourcesTypes.HANDLER_SOURCE_TYPE,
+                GetGroup,
+                source_type=SourcesTypes.SGOTO_SOURCE_TYPE,
                 payload=file["name"].replace('.xlsx', ''),
+
             )
             file_keyboard.append([button])
 
         return file_keyboard
 
 
-class GetGroup(StartMixin, Screen):
+class GetGroup(BaseScreen, RouteMixin):
     description = "Пришлите номер группы!"
+    routes = (
+        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),
+    )
+    async def sgoto(
+        self: 'Self',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
+        **kwargs: 'Any',
+    ) -> 'State':
+        payload = await self.get_payload(update, context)
+        context.user_data['payload'] = payload
 
-    def __init__(self, payload=None, **kwargs):
-        self.date = payload
-        super().__init__()
+        return await super().sgoto(update, context, **kwargs)
 
     @register_typing_handler
     async def get_schedule(self, update, context):
+        payload = context.user_data.get('payload')
         msg = update.message.text
-        schedule = search_schedule_by_teacher(self.date, msg)
-        if isinstance(schedule, str):
+        data = {
+            'date':payload,
+            'group':msg
+        }
+
+        if any(char.isdigit() for char in msg):
+            response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
+            if response.status_code != 200:
+                print(f"Ошибка: статус код {response.status_code}")
+            schedule = response.json()
             rasp = GetSchedule()
             rasp.description = schedule
-            await rasp.jump(update, context)
-        else:
-            schedule2 = f'{msg}\n' + ''.join(schedule).replace(',', '\n')
-            schedule3 = form_schedule(schedule2)
-            rasp = GetSchedule()
-            rasp.description = schedule3
-            await rasp.jump(update, context)
+            return await rasp.jump(update, context)
+        response = requests.post('http://127.0.0.1:8000/api/teachers/', json=data)
+        if response.status_code != 200:
+            print(f"Ошибка: статус код {response.status_code}")
+        schedule = response.json()
+        rasp = GetSchedule()
+        rasp.description = schedule
+        return await rasp.jump(update, context)
 
 
-class GetSchedule(StartMixin, Screen):
-    async def shedule_text(self):
-        txt = "привет)"
+
+class GetSchedule(BaseScreen):
+    async def add_default_keyboard(self, update, context):
+        return [
+            [
+                Button(
+                    "Вернуться к выбору даты",
+                    source=StartScreen,
+                    source_type=SourcesTypes.GOTO_SOURCE_TYPE
+                )
+            ]
+        ]
 
 
 def main():
     name = 'Start_Screen'
     app = Application(
         name,
-        entry_point=HelloScreen,
+        entry_point=StartScreen,
         states={
-            DEFAULT_STATE: [HelloScreen, GetGroup],
+            DEFAULT_STATE: {StartScreen,GetSchedule},
+            WAITING_FOR_GROUP_NAME: {GetGroup},
         },
     )
     app.run()
