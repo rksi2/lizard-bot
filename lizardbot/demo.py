@@ -8,22 +8,35 @@ import requests
 
 
 class BaseScreen(Screen):
+    """Базовый экран с скрытой клавиатурой."""
     hide_keyboard = True
 
 
 class StartScreen(StartMixin, BaseScreen):
-    description = "Привет, это бот который собирает расписание, выбери дату."
+    """Начальный экран бота, предоставляет список доступных расписаний."""
+
+    description = 'Привет, это бот который собирает расписание, выбери дату.'
 
     async def add_default_keyboard(self, update, _context):
-        response = requests.get("http://127.0.0.1:8000/api/files")
+        """
+        Добавляет клавиатуру по умолчанию с доступными файлами расписаний.
+
+        Args:
+            update (Update): Объект обновления.
+            _context (CallbackContext): Контекстный объект.
+
+        Returns:
+            list: Список кнопок файлов.
+        """
+        response = requests.get('http://127.0.0.1:8000/api/files')
         files = response.json()
         file_keyboard = []
         for file in files:
             button = Button(
-                f'{file["name"]}'.replace(".xlsx", ""),
+                f'{file["name"]}'.replace('.xlsx', ''),
                 GetGroup,
                 source_type=SourcesTypes.SGOTO_SOURCE_TYPE,
-                payload=file["name"].replace(".xlsx", ""),
+                payload=file["name"].replace('.xlsx', ''),
             )
             file_keyboard.append([button])
 
@@ -31,35 +44,64 @@ class StartScreen(StartMixin, BaseScreen):
 
 
 class GetGroup(BaseScreen, RouteMixin):
+    """Экран для ввода номера группы пользователем."""
+
     description = "Пришлите номер группы!"
-    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
+    routes = (
+        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),
+    )
 
     async def sgoto(
-        self: "Self",
-        update: "Update",
-        context: "CallbackContext[BT, UD, CD, BD]",
-        **kwargs: "Any",
-    ) -> "State":
+            self: 'Self',
+            update: 'Update',
+            context: 'CallbackContext[BT, UD, CD, BD]',
+            **kwargs: 'Any',
+    ) -> 'State':
+        """
+        Переход к экрану ввода номера группы.
+
+        Args:
+            update (Update): Объект обновления.
+            context (CallbackContext): Контекстный объект.
+            **kwargs (Any): Дополнительные аргументы.
+
+        Returns:
+            State: Следующее состояние.
+        """
         payload = await self.get_payload(update, context)
-        context.user_data["payload"] = payload
+        context.user_data['payload'] = payload
 
         return await super().sgoto(update, context, **kwargs)
 
     @register_typing_handler
     async def get_schedule(self, update, context):
-        payload = context.user_data.get("payload")
+        """
+        Обрабатывает ввод номера группы и получает расписание.
+
+        Args:
+            update (Update): Объект обновления.
+            context (CallbackContext): Контекстный объект.
+
+        Returns:
+            State: Следующее состояние с расписанием.
+        """
+        payload = context.user_data.get('payload')
         msg = update.message.text
-        data = {"date": payload, "group": msg}
+        data = {
+            'date': payload,
+            'group': msg
+        }
 
         if any(char.isdigit() for char in msg):
-            response = requests.post("http://127.0.0.1:8000/api/service/", json=data)
+            response = requests.post('http://127.0.0.1:8000/api/service/', json=data)
             if response.status_code != 200:
                 print(f"Ошибка: статус код {response.status_code}")
             schedule = response.json()
             rasp = GetSchedule()
             rasp.description = schedule
             return await rasp.jump(update, context)
-        response = requests.post("http://127.0.0.1:8000/api/teachers/", json=data)
+
+        response = requests.post('http://127.0.0.1:8000/api/teachers/', json=data)
         if response.status_code != 200:
             print(f"Ошибка: статус код {response.status_code}")
         schedule = response.json()
@@ -69,20 +111,33 @@ class GetGroup(BaseScreen, RouteMixin):
 
 
 class GetSchedule(BaseScreen):
+    """Экран для отображения расписания."""
+
     async def add_default_keyboard(self, update, context):
+        """
+        Добавляет клавиатуру с кнопкой возврата к выбору даты.
+
+        Args:
+            update (Update): Объект обновления.
+            context (CallbackContext): Контекстный объект.
+
+        Returns:
+            list: Список кнопок.
+        """
         return [
             [
                 Button(
                     "Вернуться к выбору даты",
                     source=StartScreen,
-                    source_type=SourcesTypes.GOTO_SOURCE_TYPE,
+                    source_type=SourcesTypes.GOTO_SOURCE_TYPE
                 )
             ]
         ]
 
 
 def main():
-    name = "Start_Screen"
+    """Главная функция для запуска приложения."""
+    name = 'Start_Screen'
     app = Application(
         name,
         entry_point=StartScreen,
@@ -96,3 +151,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
