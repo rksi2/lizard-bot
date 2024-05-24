@@ -1,16 +1,28 @@
 """
-Файл построения логики бота и взаимодействия с API
+Файл построения логики бота и взаимодействия с API.
 
 Содержит необходимые импорты для работы приложения.
 """
 
+import logging
+from typing import Any
+
+import aiohttp
 from hammett.core import Application, Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
-from hammett.core.screen import Screen
-from hammett.core.mixins import StartMixin, RouteMixin
 from hammett.core.handlers import register_typing_handler
+from hammett.core.mixins import RouteMixin, StartMixin
+from hammett.core.screen import Screen
+from hammett.types import BD, BT, CD, UD, CallbackContext, State, Update
+
 from lizardbot import WAITING_FOR_GROUP_NAME
-import requests
+
+# Настройка логгера
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+TIMEOUT = 10
+HTTP_OK = 200
 
 
 class BaseScreen(Screen):
@@ -24,11 +36,13 @@ class StartScreen(StartMixin, BaseScreen):
 
     description = "Привет, это бот который собирает расписание, выбери дату."
 
-    async def add_default_keyboard(self, update, _context) -> "List[List[Button]]":
+    async def add_default_keyboard(
+        self: "StartScreen", _update: Update, _context: CallbackContext[BT, UD, CD, BD],
+    ) -> list[list[Button]]:
         """Добавляет клавиатуру по умолчанию с доступными файлами расписаний."""
+        async with aiohttp.ClientSession() as session, session.get("http://127.0.0.1:8000/api/files", timeout=TIMEOUT) as response:
+            files = await response.json()
 
-        response = requests.get("http://127.0.0.1:8000/api/files")
-        files = response.json()
         file_keyboard = []
         for file in files:
             button = Button(
@@ -49,40 +63,40 @@ class GetGroup(BaseScreen, RouteMixin):
     routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
 
     async def sgoto(
-        self: "Self",
-        update: "Update",
-        context: "CallbackContext[BT, UD, CD, BD]",
-        **kwargs: "Any",
-    ) -> "State":
+        self: "GetGroup",
+        update: Update,
+        context: CallbackContext[BT, UD, CD, BD],
+        **kwargs: Any,
+    ) -> State:
         """Переход к экрану ввода номера группы."""
-
         payload = await self.get_payload(update, context)
         context.user_data["payload"] = payload
 
         return await super().sgoto(update, context, **kwargs)
 
     @register_typing_handler
-    async def get_schedule(self, update, context) -> "State":
+    async def get_schedule(self: "GetGroup", update: Update, context: CallbackContext[BT, UD, CD, BD]) -> State:
         """Обрабатывает ввод номера группы и получает расписание."""
-
         payload = context.user_data.get("payload")
         msg = update.message.text
         data = {"date": payload, "group": msg}
 
-        if any(char.isdigit() for char in msg):
-            response = requests.post("http://127.0.0.1:8000/api/service/", json=data)
-            if response.status_code != 200:
-                print(f"Ошибка: статус код {response.status_code}")
-            schedule = response.json()
-            rasp = GetSchedule()
-            rasp.description = schedule
-            await rasp.jump(update, context)
-            return await self._get_return_state_from_routes(update, context, self.routes)
+        async with aiohttp.ClientSession() as session:
+            if any(char.isdigit() for char in msg):
+                async with session.post("http://127.0.0.1:8000/api/service/", json=data, timeout=TIMEOUT) as response:
+                    if response.status != HTTP_OK:
+                        logger.error("Ошибка: статус код %d", response.status)
+                    schedule = await response.json()
+                rasp = GetSchedule()
+                rasp.description = schedule
+                await rasp.jump(update, context)
+                return await self._get_return_state_from_routes(update, context, self.routes)
 
-        response = requests.post("http://127.0.0.1:8000/api/teachers/", json=data)
-        if response.status_code != 200:
-            print(f"Ошибка: статус код {response.status_code}")
-        schedule = response.json()
+            async with session.post("http://127.0.0.1:8000/api/teachers/", json=data, timeout=TIMEOUT) as response:
+                if response.status != HTTP_OK:
+                    logger.error("Ошибка: статус код %d", response.status)
+                schedule = await response.json()
+
         rasp = GetSchedule()
         rasp.description = schedule
         await rasp.jump(update, context)
@@ -92,23 +106,23 @@ class GetGroup(BaseScreen, RouteMixin):
 class GetSchedule(BaseScreen):
     """Экран для отображения расписания."""
 
-    async def add_default_keyboard(self, update, context) -> "List[List[Button]]":
+    async def add_default_keyboard(
+        self: "GetSchedule", _update: Update, _context: CallbackContext[BT, UD, CD, BD],
+    ) -> list[list[Button]]:
         """Добавляет клавиатуру с кнопкой возврата к выбору даты."""
-
         return [
             [
                 Button(
                     "Вернуться к выбору даты",
                     source=StartScreen,
                     source_type=SourcesTypes.GOTO_SOURCE_TYPE,
-                )
-            ]
+                ),
+            ],
         ]
 
 
-def main():
+def main() -> None:
     """Главная функция для запуска приложения."""
-
     name = "Start_Screen"
     app = Application(
         name,
