@@ -4,19 +4,12 @@
 Содержит необходимые импорты для работы приложения.
 """
 
-# Модули Hammett.core Application и Button для работы API и кнопок
 from hammett.core import Application, Button
-# Модули Hammett.core для перехода между State
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
-# Модуль Hammett.core.screen для работы с телеграмм сообщениями
 from hammett.core.screen import Screen
-# Модули Hammett.core.mixins для обработки команды /start и переключения между State
 from hammett.core.mixins import StartMixin, RouteMixin
-# Модуль hammett.core.handlers для регистрации и обработки сообщений пользователя
 from hammett.core.handlers import register_typing_handler
-# Модуль lizardbot который ожидает ввод имени
 from lizardbot import WAITING_FOR_GROUP_NAME
-# Библиотека для запросов в боте
 import requests
 
 
@@ -84,14 +77,16 @@ class GetGroup(BaseScreen, RouteMixin):
             rasp = GetSchedule()
             rasp.description = schedule
             await rasp.jump(update, context)
-        else:
-            response = requests.post("http://127.0.0.1:8000/api/teachers/", json=data)
-            if response.status_code != 200:
-                print(f"Ошибка: статус код {response.status_code}")
-            schedule = response.json()
-            rasp = GetSchedule()
-            rasp.description = schedule
-            await rasp.jump(update, context)
+            return await self._get_return_state_from_routes(update, context, self.routes)
+
+        response = requests.post("http://127.0.0.1:8000/api/teachers/", json=data)
+        if response.status_code != 200:
+            print(f"Ошибка: статус код {response.status_code}")
+        schedule = response.json()
+        rasp = GetSchedule()
+        rasp.description = schedule
+        await rasp.jump(update, context)
+        return await self._get_return_state_from_routes(update, context, self.routes)
 
 
 class GetSchedule(BaseScreen):
