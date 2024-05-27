@@ -9,7 +9,7 @@ from lizardbot import WAITING_FOR_GROUP_NAME
 
 def main() -> None:
     """Главная функция для запуска приложения."""
-    name = "Lizard_bot"
+    name = 'Lizard_bot'
     app = Application(
         name,
         entry_point=StartScreen,
@@ -21,5 +21,5 @@ def main() -> None:
     app.run()
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
