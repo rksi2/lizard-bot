@@ -4,6 +4,7 @@ lint.select = ["ALL"]
 
 lint.ignore = [
     "ANN401",  # any-type
+    "RUF002",
     "D105",
     "D107",
     "D202",  # no-blank-line-after-function

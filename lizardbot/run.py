@@ -1,10 +1,11 @@
-from screens import StartScreen, GetSchedule, GetGroup
-import logging
-from typing import Any
-import aiohttp
-from hammett.core import Application, Button
+"""Модуль run.py для запуска бота."""
+
+from hammett.core import Application
 from hammett.core.constants import DEFAULT_STATE
+from screens import GetGroup, GetSchedule, StartScreen
+
 from lizardbot import WAITING_FOR_GROUP_NAME
+
 
 def main() -> None:
     """Главная функция для запуска приложения."""

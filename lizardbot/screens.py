@@ -1,17 +1,22 @@
-from lizardbot import logger
+"""
+Модуль screens.py с логикой бота и взаимодействием с API.
+
+Содержит необходимые импорты для корректной работы.
+"""
+
 from typing import Any
+
 import aiohttp
-from hammett.core import  Button
+from hammett.core import Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
 from hammett.core.mixins import RouteMixin, StartMixin
 from hammett.core.screen import Screen
-from hammett.types import BD, BT, CD, UD, CallbackContext, State, Update
+from hammett.types import BD, BT, CD, UD, CallbackContext, Keyboard, State, Update
 
-from lizardbot import WAITING_FOR_GROUP_NAME
+from lizardbot import WAITING_FOR_GROUP_NAME, logger
 
 # Настройка логгера
-
 
 TIMEOUT = 10
 HTTP_OK = 200
@@ -29,20 +34,21 @@ class StartScreen(StartMixin, BaseScreen):
     description = "Привет, это бот который собирает расписание, выбери дату."
 
     async def add_default_keyboard(
-            self: 'Self',
-            _update: 'Update',
-            _context: 'CallbackContext[BT, UD, CD, BD]',
-    ) -> 'Keyboard':
+        self: "StartScreen",
+        _update: Update,
+        _context: CallbackContext[BT, UD, CD, BD],
+    ) -> Keyboard:
         """Добавляет клавиатуру по умолчанию с доступными файлами расписаний."""
-        async with aiohttp.ClientSession() as session:
-            async with session.get("http://127.0.0.1:8000/api/files", timeout=TIMEOUT) as response:
-                if response.status != HTTP_OK:
-                    logger.error(f"Failed to fetch files: {response.status}")
-                    return []
-                if response.content_type != 'application/json':
-                    logger.error(f"Unexpected content type: {response.content_type}")
-                    return []
-                files = await response.json()
+        async with aiohttp.ClientSession() as session, session.get(
+            "http://127.0.0.1:8000/api/files", timeout=TIMEOUT,
+        ) as response:
+            if response.status != HTTP_OK:
+                logger.error(f"Failed to fetch files: {response.status}")
+                return []
+            if response.content_type != "application/json":
+                logger.error(f"Unexpected content type: {response.content_type}")
+                return []
+            files = await response.json()
 
         file_keyboard = []
         for file in files:
@@ -61,9 +67,7 @@ class GetGroup(BaseScreen, RouteMixin):
     """Экран для ввода номера группы пользователем."""
 
     description = "Пришлите номер группы!"
-    routes = (
-        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),
-    )
+    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
 
     async def sgoto(
         self: "GetGroup",
@@ -78,7 +82,9 @@ class GetGroup(BaseScreen, RouteMixin):
         return await super().sgoto(update, context, **kwargs)
 
     @register_typing_handler
-    async def get_schedule(self: "GetGroup", update: Update, context: CallbackContext[BT, UD, CD, BD]) -> State:
+    async def get_schedule(
+        self: "GetGroup", update: Update, context: CallbackContext[BT, UD, CD, BD],
+    ) -> State:
         """Обрабатывает ввод номера группы и получает расписание."""
         payload = context.user_data.get("payload")
         msg = update.message.text
@@ -86,22 +92,28 @@ class GetGroup(BaseScreen, RouteMixin):
 
         async with aiohttp.ClientSession() as session:
             if any(char.isdigit() for char in msg):
-                async with session.post("http://127.0.0.1:8000/api/service/", json=data, timeout=TIMEOUT) as response:
+                async with session.post(
+                    "http://127.0.0.1:8000/api/service/", json=data, timeout=TIMEOUT,
+                ) as response:
                     if response.status != HTTP_OK:
                         logger.error("Ошибка: статус код %d", response.status)
-                    if response.content_type != 'application/json':
+                    if response.content_type != "application/json":
                         logger.error(f"Unexpected content type: {response.content_type}")
-                        return await self._get_return_state_from_routes(update, context, self.routes)
+                        return await self._get_return_state_from_routes(
+                            update, context, self.routes,
+                        )
                     schedule = await response.json()
                 rasp = GetSchedule()
                 rasp.description = schedule
                 await rasp.jump(update, context)
                 return await self._get_return_state_from_routes(update, context, self.routes)
 
-            async with session.post("http://127.0.0.1:8000/api/teachers/", json=data, timeout=TIMEOUT) as response:
+            async with session.post(
+                "http://127.0.0.1:8000/api/teachers/", json=data, timeout=TIMEOUT,
+            ) as response:
                 if response.status != HTTP_OK:
                     logger.error("Ошибка: статус код %d", response.status)
-                if response.content_type != 'application/json':
+                if response.content_type != "application/json":
                     logger.error(f"Unexpected content type: {response.content_type}")
                     return await self._get_return_state_from_routes(update, context, self.routes)
                 schedule = await response.json()
@@ -116,7 +128,9 @@ class GetSchedule(BaseScreen):
     """Экран для отображения расписания."""
 
     async def add_default_keyboard(
-        self: "GetSchedule", _update: Update, _context: CallbackContext[BT, UD, CD, BD],
+        self: "GetSchedule",
+        _update: Update,
+        _context: CallbackContext[BT, UD, CD, BD],
     ) -> list[list[Button]]:
         """Добавляет клавиатуру с кнопкой возврата к выбору даты."""
         return [
@@ -128,6 +142,3 @@ class GetSchedule(BaseScreen):
                 ),
             ],
         ]
-
-
-
