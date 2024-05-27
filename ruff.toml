@@ -27,7 +27,7 @@ exclude = [".git/"]
 target-version = "py310"
 
 [lint.flake8-quotes]
-inline-quotes = "double"
+inline-quotes = 'single'
 
 [lint.pylint]
 max-args = 7
