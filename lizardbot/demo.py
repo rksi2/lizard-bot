@@ -1,12 +1,5 @@
-"""
-Файл построения логики бота и взаимодействия с API.
-
-Содержит необходимые импорты для работы приложения.
-"""
-
 import logging
 from typing import Any
-
 import aiohttp
 from hammett.core import Application, Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
@@ -40,8 +33,15 @@ class StartScreen(StartMixin, BaseScreen):
         self: "StartScreen", _update: Update, _context: CallbackContext[BT, UD, CD, BD],
     ) -> list[list[Button]]:
         """Добавляет клавиатуру по умолчанию с доступными файлами расписаний."""
-        async with aiohttp.ClientSession() as session, session.get("http://127.0.0.1:8000/api/files", timeout=TIMEOUT) as response:
-            files = await response.json()
+        async with aiohttp.ClientSession() as session:
+            async with session.get("http://127.0.0.1:8000/api/files", timeout=TIMEOUT) as response:
+                if response.status != HTTP_OK:
+                    logger.error(f"Failed to fetch files: {response.status}")
+                    return []
+                if response.content_type != 'application/json':
+                    logger.error(f"Unexpected content type: {response.content_type}")
+                    return []
+                files = await response.json()
 
         file_keyboard = []
         for file in files:
@@ -86,6 +86,9 @@ class GetGroup(BaseScreen, RouteMixin):
                 async with session.post("http://127.0.0.1:8000/api/service/", json=data, timeout=TIMEOUT) as response:
                     if response.status != HTTP_OK:
                         logger.error("Ошибка: статус код %d", response.status)
+                    if response.content_type != 'application/json':
+                        logger.error(f"Unexpected content type: {response.content_type}")
+                        return await self._get_return_state_from_routes(update, context, self.routes)
                     schedule = await response.json()
                 rasp = GetSchedule()
                 rasp.description = schedule
@@ -95,6 +98,9 @@ class GetGroup(BaseScreen, RouteMixin):
             async with session.post("http://127.0.0.1:8000/api/teachers/", json=data, timeout=TIMEOUT) as response:
                 if response.status != HTTP_OK:
                     logger.error("Ошибка: статус код %d", response.status)
+                if response.content_type != 'application/json':
+                    logger.error(f"Unexpected content type: {response.content_type}")
+                    return await self._get_return_state_from_routes(update, context, self.routes)
                 schedule = await response.json()
 
         rasp = GetSchedule()
@@ -115,10 +121,11 @@ class GetSchedule(BaseScreen):
                 Button(
                     "Вернуться к выбору даты",
                     source=StartScreen,
-                    source_type=SourcesTypes.GOTO_SOURCE_TYPE,
+                    source_type=SourcesTypes.JUMP_SOURCE_TYPE,
                 ),
             ],
         ]
+
 
 
 def main() -> None:
@@ -128,8 +135,8 @@ def main() -> None:
         name,
         entry_point=StartScreen,
         states={
-            DEFAULT_STATE: {StartScreen, GetSchedule},
-            WAITING_FOR_GROUP_NAME: {GetGroup},
+            DEFAULT_STATE: {GetSchedule},
+            WAITING_FOR_GROUP_NAME: {GetGroup, StartScreen},
         },
     )
     app.run()
