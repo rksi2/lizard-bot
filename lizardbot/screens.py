@@ -1,7 +1,7 @@
-import logging
+from lizardbot import logger
 from typing import Any
 import aiohttp
-from hammett.core import Application, Button
+from hammett.core import  Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
 from hammett.core.mixins import RouteMixin, StartMixin
@@ -11,15 +11,14 @@ from hammett.types import BD, BT, CD, UD, CallbackContext, State, Update
 from lizardbot import WAITING_FOR_GROUP_NAME
 
 # Настройка логгера
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+
 
 TIMEOUT = 10
 HTTP_OK = 200
 
 
 class BaseScreen(Screen):
-    """Базовый экран с скрытой клавиатурой."""
+    """Базовый класс для всех экранов бота."""
 
     hide_keyboard = True
 
@@ -30,8 +29,10 @@ class StartScreen(StartMixin, BaseScreen):
     description = "Привет, это бот который собирает расписание, выбери дату."
 
     async def add_default_keyboard(
-        self: "StartScreen", _update: Update, _context: CallbackContext[BT, UD, CD, BD],
-    ) -> list[list[Button]]:
+            self: 'Self',
+            _update: 'Update',
+            _context: 'CallbackContext[BT, UD, CD, BD]',
+    ) -> 'Keyboard':
         """Добавляет клавиатуру по умолчанию с доступными файлами расписаний."""
         async with aiohttp.ClientSession() as session:
             async with session.get("http://127.0.0.1:8000/api/files", timeout=TIMEOUT) as response:
@@ -60,7 +61,9 @@ class GetGroup(BaseScreen, RouteMixin):
     """Экран для ввода номера группы пользователем."""
 
     description = "Пришлите номер группы!"
-    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
+    routes = (
+        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),
+    )
 
     async def sgoto(
         self: "GetGroup",
@@ -121,26 +124,10 @@ class GetSchedule(BaseScreen):
                 Button(
                     "Вернуться к выбору даты",
                     source=StartScreen,
-                    source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+                    source_type=SourcesTypes.SJUMP_SOURCE_TYPE,
                 ),
             ],
         ]
 
 
 
-def main() -> None:
-    """Главная функция для запуска приложения."""
-    name = "Start_Screen"
-    app = Application(
-        name,
-        entry_point=StartScreen,
-        states={
-            DEFAULT_STATE: {GetSchedule},
-            WAITING_FOR_GROUP_NAME: {GetGroup, StartScreen},
-        },
-    )
-    app.run()
-
-
-if __name__ == "__main__":
-    main()
