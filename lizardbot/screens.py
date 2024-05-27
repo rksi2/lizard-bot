@@ -88,7 +88,9 @@ class GetGroup(BaseScreen, RouteMixin):
 
     @register_typing_handler
     async def get_schedule(
-        self: 'Self', update: 'Update', context: 'CallbackContext[BT, UD, CD, BD]',
+        self: 'Self',
+            update: 'Update',
+            context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> State:
         """Обрабатывает ввод номера группы и получает расписание."""
         payload = context.user_data.get('payload')
