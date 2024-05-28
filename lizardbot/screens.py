@@ -5,7 +5,7 @@
 """
 
 import os
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 import httpx
 from dotenv import load_dotenv
@@ -14,7 +14,12 @@ from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
 from hammett.core.mixins import RouteMixin, StartMixin
 from hammett.core.screen import Screen
-from hammett.types import BD, BT, CD, UD, CallbackContext, Keyboard, Self, State, Update
+
+if TYPE_CHECKING:
+    from telegram import Update
+    from telegram.ext._utils.types import BD, BT, CD, UD
+    from telegram.ext import CallbackContext
+from hammett.types import CallbackContext, Keyboard, State
 
 from lizardbot import WAITING_FOR_GROUP_NAME, logger
 
@@ -38,7 +43,7 @@ class StartScreen(StartMixin, BaseScreen):
     description = 'Привет, это бот который собирает расписание, выбери дату.'
 
     async def add_default_keyboard(
-        self: 'Self',
+        self: 'Any',
         _update: 'Update',
         _context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> Keyboard:
@@ -75,7 +80,7 @@ class GetGroup(BaseScreen, RouteMixin):
     routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
 
     async def sgoto(
-        self: 'Self',
+        self: 'Any',
         update: 'Update',
         context: 'CallbackContext[BT, UD, CD, BD]',
         **kwargs: Any,
@@ -88,7 +93,7 @@ class GetGroup(BaseScreen, RouteMixin):
 
     @register_typing_handler
     async def get_schedule(
-        self: 'Self',
+        self: 'Any',
             update: 'Update',
             context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> State:
@@ -135,7 +140,7 @@ class GetSchedule(BaseScreen):
     """Экран для отображения расписания."""
 
     async def add_default_keyboard(
-        self: 'Self',
+        self: 'Any',
         _update: 'Update',
         _context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> list[list[Button]]:
