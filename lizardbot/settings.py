@@ -1,5 +1,15 @@
+"""Модуль настроек проекта."""
+
 import os
 
-TOKEN = os.getenv('TOKEN', '7079723416:AAEscyl3lGuG0Sq-2ebbH96G0WJxlrE06mE')
+from dotenv import load_dotenv
+
+load_dotenv()
+
+API_URL = os.getenv('API_URL', 'http://127.0.0.1:8000')
+
 SAVE_LATEST_MESSAGE = True
 
+TIMEOUT = 10
+
+TOKEN = os.getenv('TOKEN', '')

@@ -1,3 +1,4 @@
 .idea
+.ruff_cache
 __pycache__
-lizardbot-423609-db4df596a5a4.json
+lizardbot-*
