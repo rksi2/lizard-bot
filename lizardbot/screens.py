@@ -5,7 +5,6 @@
 
 from typing import TYPE_CHECKING
 
-from lizardbot.client import API_CLIENT
 from hammett.core import Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
@@ -13,6 +12,7 @@ from hammett.core.mixins import RouteMixin, StartMixin
 from hammett.core.screen import Screen
 
 from lizardbot import WAITING_FOR_GROUP_NAME
+from lizardbot.client import API_CLIENT
 
 if TYPE_CHECKING:
     from typing import Any, Self
