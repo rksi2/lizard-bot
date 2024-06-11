@@ -9,9 +9,9 @@ from hammett.core import Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
 from hammett.core.mixins import RouteMixin, StartMixin
-from hammett.core.screen import Screen
+from hammett.core.screen import RenderConfig, Screen
 
-from lizardbot import WAITING_FOR_GROUP_NAME
+from lizardbot import WAITING_FOR_EDUCATOR_LAST_NAME, WAITING_FOR_GROUP_NAME
 from lizardbot.client import API_CLIENT
 
 if TYPE_CHECKING:
@@ -55,11 +55,76 @@ class StartScreen(StartMixin, BaseScreen):
         return keyboard
 
 
+class FullEducatorName(BaseScreen, RouteMixin):
+    """Экран для ввода ФИО преподавателя."""
+
+    routes = (
+        ({DEFAULT_STATE, WAITING_FOR_EDUCATOR_LAST_NAME}, WAITING_FOR_EDUCATOR_LAST_NAME),
+    )
+
+    async def sjump(
+        self: 'Self',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
+        **kwargs: 'Any',
+    ) -> 'State':
+        """Переопределения метода для настройки конфига."""
+        config = kwargs.get('config', None)
+
+        if config is None:
+            config = await self.get_config(update, context, **kwargs)
+
+        config.as_new_message = True
+        await self.render(update, context, config=config)
+
+        return await self._get_return_state_from_routes(
+            update, context, self.routes,
+        )
+
+    @register_typing_handler
+    async def process_educator_last_name(
+        self: 'Self',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
+    ) -> 'State':
+        """Обрабатывает запрос на ФИО преподавателя."""
+        message = update.message
+        fio = message.text
+        if fio.lower().startswith('фио'):
+            last_name = fio.split()
+            result = await API_CLIENT.get_fio_details(params={'fio': last_name[1]})
+
+            return await FullEducatorName().sjump(
+                update, context,
+                config=RenderConfig(description=result),
+            )
+
+        return await self._get_return_state_from_routes(update, context, self.routes)
+
+    async def add_default_keyboard(
+        self: 'Self',
+        _update: 'Update | None',
+        _context: 'CallbackContext[BT, UD, CD, BD]',
+    ) -> 'Keyboard':
+        """Добавляет клавиатуру с кнопкой возврата к выбору даты."""
+        return [
+            [
+                Button(
+                    'Вернуться к выбору даты',
+                    source=StartScreen,
+                    source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+                ),
+            ],
+        ]
+
+
 class GetGroup(BaseScreen, RouteMixin):
     """Экран для ввода номера группы пользователем."""
 
     description = 'Пришлите номер группы или фамилию преподавателя!'
-    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
+    routes = (
+        ({DEFAULT_STATE, WAITING_FOR_EDUCATOR_LAST_NAME}, WAITING_FOR_GROUP_NAME),
+    )
 
     async def sgoto(
         self: 'Self',
@@ -79,31 +144,65 @@ class GetGroup(BaseScreen, RouteMixin):
         update: 'Update',
         context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> 'State':
+        """Получение расписания группы."""
+        message = update.message
+        if message is None:
+            return DEFAULT_STATE
+
+        if message.text.lower().startswith('фио'):
+            fio = message.text.split()
+            result = await API_CLIENT.get_fio_details(params={'fio': fio[1]})
+
+            return await FullEducatorName().sjump(
+                update, context,
+                config=RenderConfig(description=result),
+            )
+
         """Обрабатывает ввод номера группы и получает расписание."""
         payload = context.user_data['payload']
-        msg = update.message.text
+        msg = message.text
         data = {'date': payload, 'group': msg}
-
         if any(char.isdigit() for char in msg):
             schedule = await API_CLIENT.get_service(params=data)
 
-            rasp = GetSchedule()
-            rasp.description = schedule
-            await rasp.jump(update, context)
-
-            return await self._get_return_state_from_routes(update, context, self.routes)
+            return await GetSchedule().sjump(
+                update, context,
+                config=RenderConfig(description=schedule),
+            )
 
         schedule = await API_CLIENT.get_teachers(params=data)
 
-        rasp = GetSchedule()
-        rasp.description = schedule
-        await rasp.jump(update, context)
+        return await GetSchedule().sjump(
+            update, context,
+            config=RenderConfig(description=schedule),
+        )
 
-        return await self._get_return_state_from_routes(update, context, self.routes)
 
-
-class GetSchedule(BaseScreen):
+class GetSchedule(BaseScreen, RouteMixin):
     """Экран для отображения расписания."""
+
+    routes = (
+        ({DEFAULT_STATE, WAITING_FOR_EDUCATOR_LAST_NAME}, WAITING_FOR_GROUP_NAME),
+    )
+
+    async def sjump(
+        self: 'Self',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
+        **kwargs: 'Any',
+    ) -> 'State':
+        """Переопределение метода jump для настройки конфига."""
+        config = kwargs.get('config', None)
+
+        if config is None:
+            config = await self.get_config(update, context, **kwargs)
+
+        config.as_new_message = True
+        await self.render(update, context, config=config)
+
+        return await self._get_return_state_from_routes(
+            update, context, self.routes,
+        )
 
     async def add_default_keyboard(
         self: 'Self',

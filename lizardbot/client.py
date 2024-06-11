@@ -50,6 +50,15 @@ class ApiClient:
 
         return response.json()
 
+    async def get_fio_details(self: 'Self', params: dict[str, Any]) -> 'httpx.Response':
+        """Получает полное ФИО учителей."""
+        url = self._build_url('/api/fio/')
+        response = await self._client.get(url, params=params)
+        if response.status_code != httpx.codes.OK:
+            LOGGER.error(f'Failed to fetch files: {response.status_code}')
+
+        return response.json()
+
 
 # Создаем единственный экземпляр клиента, который будет использоваться в приложении
 API_CLIENT = ApiClient()

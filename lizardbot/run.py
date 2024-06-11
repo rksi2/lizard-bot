@@ -3,8 +3,8 @@
 from hammett.core import Application
 from hammett.core.constants import DEFAULT_STATE
 
-from lizardbot import WAITING_FOR_GROUP_NAME
-from lizardbot.screens import GetGroup, GetSchedule, StartScreen
+from lizardbot import WAITING_FOR_EDUCATOR_LAST_NAME, WAITING_FOR_GROUP_NAME
+from lizardbot.screens import FullEducatorName, GetGroup, GetSchedule, StartScreen
 
 
 def main() -> None:
@@ -14,8 +14,9 @@ def main() -> None:
         name,
         entry_point=StartScreen,
         states={
-            DEFAULT_STATE: {GetSchedule},
+            DEFAULT_STATE: {GetSchedule, FullEducatorName},
             WAITING_FOR_GROUP_NAME: {GetGroup, StartScreen},
+            WAITING_FOR_EDUCATOR_LAST_NAME: {StartScreen, FullEducatorName}
         },
     )
     app.run()
