@@ -5,7 +5,6 @@
 
 from typing import TYPE_CHECKING
 
-from lizardbot.client import API_CLIENT
 from hammett.core import Button
 from hammett.core.constants import DEFAULT_STATE, SourcesTypes
 from hammett.core.handlers import register_typing_handler
@@ -13,6 +12,8 @@ from hammett.core.mixins import RouteMixin, StartMixin
 from hammett.core.screen import Screen
 
 from lizardbot import WAITING_FOR_GROUP_NAME
+from lizardbot.client import API_CLIENT
+from typing import Set, Tuple
 
 if TYPE_CHECKING:
     from typing import Any, Self
@@ -55,11 +56,51 @@ class StartScreen(StartMixin, BaseScreen):
         return keyboard
 
 
+class GetFio(BaseScreen, RouteMixin):
+    routes: 'Tuple[Tuple[Set[State], State]]' = (
+        ({WAITING_FOR_GROUP_NAME}, DEFAULT_STATE),
+        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME)
+    )
+
+    @register_typing_handler
+    async def get_fio(
+            self: 'Self',
+            update: 'Update',
+            context: 'CallbackContext[BT, UD, CD, BD]'
+    ) -> 'State':
+        fio = update.message.text
+        if fio.lower().startswith('фио'):
+            fio2 = fio.split()
+            scr = GetFio()
+            result = await API_CLIENT.get_fio_details(params={'fio': fio2[1]})
+            scr.description = result
+            await scr.sjump(update, context)
+            return await self._get_return_state_from_routes(update, context, self.routes)
+
+    async def add_default_keyboard(
+        self: 'Self',
+        _update: 'Update | None',
+        _context: 'CallbackContext[BT, UD, CD, BD]',
+    ) -> 'Keyboard':
+            return [
+                [
+                    Button(
+                        'Вернуться к выбору даты',
+                        source=StartScreen,
+                        source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+                    ),
+                ],
+            ]
+
+
 class GetGroup(BaseScreen, RouteMixin):
     """Экран для ввода номера группы пользователем."""
 
     description = 'Пришлите номер группы или фамилию преподавателя!'
-    routes = (({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME),)
+    routes: 'Tuple[Tuple[Set[State], State]]' = (
+        ({WAITING_FOR_GROUP_NAME}, DEFAULT_STATE),
+        ({DEFAULT_STATE}, WAITING_FOR_GROUP_NAME)
+    )
 
     async def sgoto(
         self: 'Self',
@@ -79,13 +120,28 @@ class GetGroup(BaseScreen, RouteMixin):
         update: 'Update',
         context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> 'State':
-        """Обрабатывает ввод номера группы и получает расписание."""
-        payload = context.user_data['payload']
-        msg = update.message.text
-        data = {'date': payload, 'group': msg}
+        if update.message.text.lower().startswith('фио'):
+            scr = GetFio()
+            fio = update.message.text.split()
+            result = await API_CLIENT.get_fio_details(params={'fio': fio[1]})
+            scr.description = result
+            await scr.sjump(update, context)
+        else:
+            """Обрабатывает ввод номера группы и получает расписание."""
+            payload = context.user_data['payload']
+            msg = update.message.text
+            data = {'date': payload, 'group': msg}
 
-        if any(char.isdigit() for char in msg):
-            schedule = await API_CLIENT.get_service(params=data)
+            if any(char.isdigit() for char in msg):
+                schedule = await API_CLIENT.get_service(params=data)
+
+                rasp = GetSchedule()
+                rasp.description = schedule
+                await rasp.jump(update, context)
+
+                return await self._get_return_state_from_routes(update, context, self.routes)
+
+            schedule = await API_CLIENT.get_teachers(params=data)
 
             rasp = GetSchedule()
             rasp.description = schedule
@@ -93,30 +149,22 @@ class GetGroup(BaseScreen, RouteMixin):
 
             return await self._get_return_state_from_routes(update, context, self.routes)
 
-        schedule = await API_CLIENT.get_teachers(params=data)
-
-        rasp = GetSchedule()
-        rasp.description = schedule
-        await rasp.jump(update, context)
-
-        return await self._get_return_state_from_routes(update, context, self.routes)
-
 
 class GetSchedule(BaseScreen):
     """Экран для отображения расписания."""
 
     async def add_default_keyboard(
         self: 'Self',
-        _update: 'Update',
-        _context: 'CallbackContext[BT, UD, CD, BD]',
+        update: 'Update',
+        context: 'CallbackContext[BT, UD, CD, BD]',
     ) -> 'Keyboard':
-        """Добавляет клавиатуру с кнопкой возврата к выбору даты."""
-        return [
-            [
-                Button(
-                    'Вернуться к выбору даты',
-                    source=StartScreen,
-                    source_type=SourcesTypes.JUMP_SOURCE_TYPE,
-                ),
-            ],
-        ]
+            """Добавляет клавиатуру с кнопкой возврата к выбору даты."""
+            return [
+                [
+                    Button(
+                        'Вернуться к выбору даты',
+                        source=StartScreen,
+                        source_type=SourcesTypes.JUMP_SOURCE_TYPE,
+                    ),
+                ],
+            ]
