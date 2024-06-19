@@ -25,8 +25,7 @@ class ApiClient:
 
     async def get_files(self: 'Self') -> 'httpx.Response':
         """Получает список файлов."""
-        url = self._build_url('/api/files/')
-        response = await self._client.get(url)
+        response = await self._client.get(self._build_url('/api/files/'))
         if response.status_code != httpx.codes.OK:
             LOGGER.error(f'Failed to fetch files: {response.status_code}')
 
@@ -34,8 +33,10 @@ class ApiClient:
 
     async def get_service(self: 'Self', params: dict[str, Any]) -> 'httpx.Response':
         """Получает информацию о сервисе."""
-        url = self._build_url('/api/service/')
-        response = await self._client.get(url, params=params)
+        response = await self._client.get(
+            self._build_url('/api/service/'),
+            params=params,
+        )
         if response.status_code != httpx.codes.OK:
             LOGGER.error(f'Failed to fetch files: {response.status_code}')
 
@@ -43,8 +44,10 @@ class ApiClient:
 
     async def get_teachers(self: 'Self', params: dict[str, Any]) -> 'httpx.Response':
         """Получает информацию о преподавателях."""
-        url = self._build_url('/api/teachers/')
-        response = await self._client.get(url, params=params)
+        response = await self._client.get(
+            self._build_url('/api/teachers/'),
+            params=params,
+        )
         if response.status_code != httpx.codes.OK:
             LOGGER.error(f'Failed to fetch files: {response.status_code}')
 
@@ -52,8 +55,10 @@ class ApiClient:
 
     async def get_fio_details(self: 'Self', params: dict[str, Any]) -> 'httpx.Response':
         """Получает полное ФИО учителей."""
-        url = self._build_url('/api/fio/')
-        response = await self._client.get(url, params=params)
+        response = await self._client.get(
+            self._build_url('/api/fio/'),
+            params=params,
+        )
         if response.status_code != httpx.codes.OK:
             LOGGER.error(f'Failed to fetch files: {response.status_code}')
 
