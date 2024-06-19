@@ -14,9 +14,9 @@ def main() -> None:
         name,
         entry_point=StartScreen,
         states={
-            DEFAULT_STATE: {GetSchedule, FullEducatorName},
+            DEFAULT_STATE: {GetSchedule, FullEducatorName, StartScreen},
             WAITING_FOR_GROUP_NAME: {GetGroup, StartScreen},
-            WAITING_FOR_EDUCATOR_LAST_NAME: {StartScreen, FullEducatorName}
+            WAITING_FOR_EDUCATOR_LAST_NAME: {FullEducatorName, StartScreen}
         },
     )
     app.run()
